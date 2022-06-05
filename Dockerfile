@@ -3,6 +3,7 @@ FROM python:3.7-slim
 WORKDIR .
 
 COPY requirements.txt requirements.txt
+COPY initdb.sql initdb.sql
 COPY agent_service/main.py main.py
 COPY agent_service/templates /templates
 
