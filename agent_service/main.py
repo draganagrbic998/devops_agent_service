@@ -274,6 +274,17 @@ def read_companies(request: Request, offset: int = Query(0), limit: int = Query(
     return list_companies(offset, limit, True)
 
 
+@app.get(f"{COMPANY_URL}/owned")
+def read_owned_company(request: Request):
+    authorization_check(request, 'owner')
+    owner_id = get_current_user(request)['id']
+
+    with db.connect() as connection:
+        companies = list(connection.execute("""select * from company where active is true and owner_id = %s limit %s""", (str(owner_id), '1')))
+    results = [Company.parse_obj(dict(company)) for company in companies]
+    return results[0] if len(results) > 0 else None
+
+
 @app.post(f"{COMPANY_URL}/review")
 def create_review(request: Request, review: Review):
     authorization_check(request)
@@ -315,6 +326,11 @@ def view_company_registration_requests(request: Request):
     return templates.TemplateResponse("company_requests.html", {"request": request})
 
 
+@app.get(f"/view{COMPANY_URL}/owned")
+def view_owned_company(request: Request):
+    return templates.TemplateResponse("owned_company.html", {"request": request})
+
+
 @app.get(f"/view{COMPANY_URL}")
 def view_companies(request: Request):
     return templates.TemplateResponse("companies.html", {"request": request})
@@ -323,6 +339,11 @@ def view_companies(request: Request):
 @app.get(f"/view{COMPANY_URL}/reviews/" + "{company_id}")
 def view_reviews(request: Request, company_id: int = Query(-1)):
     return templates.TemplateResponse("reviews.html", {"request": request, "company_id": company_id})
+
+
+@app.get(f"/view{COMPANY_URL}/offer")
+def view_create_offer(request: Request):
+    return templates.TemplateResponse("create_offer.html", {"request": request})
 
 
 def create_tables():

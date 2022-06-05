@@ -1081,6 +1081,26 @@ def test_list_companies_inactive():
         """.split()), (False, 0, 10))
 
 
+@patch('agent_service.main.db', testDB)
+@patch('agent_service.main.auth_req', return_value={'role': 'owner'})
+@patch('agent_service.main.authorization_check', return_value=None)
+@patch('test.unit_test.testDB.execute', return_value=[{'id': 1, 'name': 'asd', 'description': 'asd', 'job_positions': 'asd', 'address': 'asd', 'city': 'asd', 'owner_id': 1, 'active': True}])
+def test_read_owned_company(param, param2, param3):
+    with patch.object(testDB, "execute", wraps=testDB.execute) as db_spy:
+        res = client.get(f"{COMPANY_URL}/owned", headers=generate_auth())
+        assert res.status_code == 200
+        body = json.loads(res.text)
+        assert body['id'] == 1
+        assert body['name'] == 'asd'
+        assert body['description'] == 'asd'
+        assert body['job_positions'] == 'asd'
+        assert body['address'] == 'asd'
+        assert body['city'] == 'asd'
+        assert body['owner_id'] == 1
+        assert body['active'] == True
+        db_spy.assert_called()
+
+
 def test_create_review_missing_text_comment():
     data = {
         'payment_review': 'asd',
