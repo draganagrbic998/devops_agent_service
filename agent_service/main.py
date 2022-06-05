@@ -35,6 +35,8 @@ app.add_middleware(
 )
 
 AUTH_URL = '/auth'
+COMPANY_URL = '/api/companies'
+OFFER_URL = '/api/offers'
 
 JWT_SECRET = 'auth_service_secret'
 JWT_ALGORITHM = 'HS256'
@@ -52,6 +54,55 @@ class Registration(BaseModel):
 class Login(BaseModel):
     username: str = Field(description='Username', min_length=1)
     password: str = Field(description='Password', min_length=1)
+
+
+class Company(BaseModel):
+    id: Optional[int] = Field(description='ID')
+    name: str = Field(description='Name', min_length=1)
+    description: str = Field(description='Description', min_length=1)
+    job_positions: Optional[str] = Field(description='Job Positions')
+    address: str = Field(description='Address', min_length=1)
+    city: str = Field(description='City', min_length=1)
+    owner_id: Optional[int] = Field(description='Owner ID')
+    active: Optional[bool] = Field(description='Active')
+
+
+class Review(BaseModel):
+    id: Optional[int] = Field(description='ID')
+    text_comment: str = Field(description='Comment', min_length=1)
+    payment_review: str = Field(description='Payment Review', min_length=1)
+    interview_review: str = Field(description='Interview Review', min_length=1)
+    company_id: int = Field(description='Company ID')
+    author_id: Optional[int] = Field(description='Author ID')
+
+
+class Offer(BaseModel):
+    position: str = Field(description='Offer Position', min_length=1)
+    requirements: str = Field(description='Offer Requirements', min_length=1)
+    description: str = Field(description='Offer Description', min_length=1)
+    agent_application_link: str = Field(description='Offer Agent Application Link', min_length=1)
+
+
+class NavigationLinks(BaseModel):
+    base: str = Field('http://localhost:8011/api', description='API base URL')
+    prev: Optional[str] = Field(None, description='Link to the previous page')
+    next: Optional[str] = Field(None, description='Link to the next page')
+
+
+class ResponseCompany(BaseModel):
+    results: List[Company]
+    links: NavigationLinks
+    offset: int
+    limit: int
+    size: int
+
+
+class ResponseReview(BaseModel):
+    results: List[Review]
+    links: NavigationLinks
+    offset: int
+    limit: int
+    size: int
 
 
 def get_password_hash(password: str):
@@ -73,6 +124,34 @@ def generate_offer_auth():
     return {'Authorization': 'agent_application_api_key'}
 
 
+def list_companies(offset: int, limit: int, active: bool):    
+    type = '' if active else '/requests'
+
+    with db.connect() as connection:
+        total_companies = len(list(connection.execute("""select * from company where active is %s""", (active))))
+    prev_link = f'/companies{type}?offset={offset - limit}&limit={limit}' if offset - limit >= 0 else None
+    next_link = f'/companies{type}?offset={offset + limit}&limit={limit}' if offset + limit < total_companies else None
+    links = NavigationLinks(prev=prev_link, next=next_link)
+
+    with db.connect() as connection:
+        companies = list(connection.execute("""select * from company where active is %s order by id offset %s limit %s""", (active, offset, limit)))
+    results = [Company.parse_obj(dict(company)) for company in companies]
+    return ResponseCompany(results=results, links=links, offset=offset, limit=limit, size=len(results))
+
+
+def list_reviews(offset: int, limit: int, company_id: int):
+    with db.connect() as connection:
+        total_reviews = len(list(connection.execute("""select * from review where company_id = %s""", (str(company_id)))))
+    prev_link = f'/companies/{company_id}/review?offset={offset - limit}&limit={limit}' if offset - limit >= 0 else None
+    next_link = f'/companies/{company_id}/review?offset={offset + limit}&limit={limit}' if offset + limit < total_reviews else None
+    links = NavigationLinks(prev=prev_link, next=next_link)
+
+    with db.connect() as connection:
+        reviews = list(connection.execute("""select * from review where company_id = %s order by id offset %s limit %s""", (str(company_id), offset, limit)))
+    results = [Review.parse_obj(dict(review)) for review in reviews]
+    return ResponseReview(results=results, links=links, offset=offset, limit=limit, size=len(results))
+
+
 def auth_req(request: Request):
     try:
         data = jwt.decode(request.headers['Authorization'], JWT_SECRET, algorithms=[JWT_ALGORITHM])
@@ -92,6 +171,7 @@ def auth_req(request: Request):
 
 def authorization_check(request: Request, role='user'):
     user = auth_req(request)
+    print(role == 'any')
     if role == 'any':
         return
     if user['role'] != role:
@@ -131,6 +211,90 @@ def auth(request: Request):
     return auth_req(request)
 
 
+@app.post(f"{COMPANY_URL}/registration")
+def company_registration(request: Request, company: Company):
+    authorization_check(request)
+    
+    with db.connect() as connection:
+        try:
+            connection.execute("""
+            insert into company (name, description, job_positions, address, city, owner_id, active) values (%s, %s, %s, %s, %s, %s, %s)
+            """, (company.name, company.description, company.job_positions, company.address, company.city, get_current_user(request)['id'], False))
+            
+            connection.execute(' '.join("""
+                update users 
+                set role=%s 
+                where id=%s
+            """.split()), ("owner-pending", get_current_user(request)['id']))
+        except:
+            raise HTTPException(status_code=400, detail="Name already exists")
+
+
+@app.put(f"{COMPANY_URL}/" + "{company_id}")
+def update_company(request: Request, company: Company, company_id: int = Query(-1)):
+    set_owner_role = False;
+    
+    with db.connect() as connection:
+        users = list(connection.execute("""select * from users where id = %s and role = %s""", (str(company.owner_id)), "owner-pending"))
+
+        if len(users) > 0:
+            authorization_check(request, 'admin')
+            set_owner_role = True
+        else:
+            authorization_check(request, 'owner')
+
+        connection.execute(' '.join(f"""
+            update company 
+            set description=%s, 
+            job_positions=%s,
+            address=%s, 
+            city=%s, 
+            active=%s 
+            where id={company_id}
+        """.split()), (company.description, company.job_positions,
+                company.address, company.city, company.active))
+
+        if set_owner_role:
+            connection.execute(' '.join(f"""
+                update users 
+                set role=%s 
+                where id={company.owner_id}
+            """.split()), ("owner"))
+
+
+@app.get(f"{COMPANY_URL}/requests")
+def read_company_requests(request: Request, offset: int = Query(0), limit: int = Query(7)):
+    authorization_check(request, 'admin')
+    return list_companies(offset, limit, False)
+
+
+@app.get(f"{COMPANY_URL}")
+def read_companies(request: Request, offset: int = Query(0), limit: int = Query(7)):
+    authorization_check(request, 'any')
+    return list_companies(offset, limit, True)
+
+
+@app.post(f"{COMPANY_URL}/review")
+def create_review(request: Request, review: Review):
+    authorization_check(request)
+    with db.connect() as connection:
+        connection.execute("""
+        insert into review (text_comment, payment_review, interview_review, company_id, author_id) values (%s, %s, %s, %s, %s)
+        """, (review.text_comment, review.payment_review, review.interview_review, review.company_id, get_current_user(request)['id']))
+
+
+@app.get(f"{COMPANY_URL}/" + "{company_id}/review")
+def read_company_reviews(request: Request, offset: int = Query(0), limit: int = Query(7), company_id: int = Query(-1)):
+    authorization_check(request, 'any')
+    return list_reviews(offset, limit, company_id)
+
+
+@app.post(f"{OFFER_URL}")
+def create_offer(request: Request, offer: Offer):
+    authorization_check(request, 'owner')
+    requests.post('http://localhost:8000/api/offers', json=dict(offer), headers=generate_offer_auth())
+
+
 @app.get(f"/view{AUTH_URL}/registration")
 def view_registration(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
@@ -139,6 +303,26 @@ def view_registration(request: Request):
 @app.get("/")
 def view_login(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
+
+
+@app.get(f"/view{COMPANY_URL}/registration")
+def view_company_registration(request: Request):
+    return templates.TemplateResponse("register_company.html", {"request": request})
+
+
+@app.get(f"/view{COMPANY_URL}/requests")
+def view_company_registration_requests(request: Request):
+    return templates.TemplateResponse("company_requests.html", {"request": request})
+
+
+@app.get(f"/view{COMPANY_URL}")
+def view_companies(request: Request):
+    return templates.TemplateResponse("companies.html", {"request": request})
+
+
+@app.get(f"/view{COMPANY_URL}/reviews/" + "{company_id}")
+def view_reviews(request: Request, company_id: int = Query(-1)):
+    return templates.TemplateResponse("reviews.html", {"request": request, "company_id": company_id})
 
 
 def create_tables():
