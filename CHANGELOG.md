@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.5.0 (2022-06-05)
+### Feature
+* Env vars feature ([#4](https://github.com/draganagrbic998/devops_agent_service/issues/4)) ([`3372af3`](https://github.com/draganagrbic998/devops_agent_service/commit/3372af35dd493433936e8da6d8e73b706f61092c))
+
 ## v1.4.0 (2022-06-05)
 ### Feature
 * Owned company edit and create offer ([#3](https://github.com/draganagrbic998/devops_agent_service/issues/3)) ([`751fb2c`](https://github.com/draganagrbic998/devops_agent_service/commit/751fb2c6a297a1a592ad1e57e274cc91a0b6075a))
