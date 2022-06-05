@@ -18,7 +18,7 @@ def generate_auth(id=0, role='user'):
 
 @pytest.fixture(scope="session", autouse=True)
 def before_tests(request):
-    time.sleep(30)
+    time.sleep(10)
 
 
 def reset_table(number_of_rows=0, role=None):
@@ -1165,6 +1165,23 @@ def test_read_company_requests_with_limit():
     assert body['limit'] == 10
     assert body['size'] == 10
     check_companies(body['results'], 10, active=False)
+
+
+def test_read_owned_company():
+    reset_table(1, 'owner')
+    reset_company_table(1, owner_id=1)
+
+    res = requests.get(f'{COMPANY_URL}/owned', headers=generate_auth(1, 'owner'))
+    assert res.status_code == 200
+    body = json.loads(res.text)
+    assert body['id'] == 1
+    assert body['name'] == 'name 1'
+    assert body['description'] == 'description 1'
+    assert body['job_positions'] == 'job_positions 1'
+    assert body['address'] == 'address 1'
+    assert body['city'] == 'city 1'
+    assert body['active'] == True
+    assert body['owner_id'] == 1
 
 
 def test_create_review_missing_text_comment():

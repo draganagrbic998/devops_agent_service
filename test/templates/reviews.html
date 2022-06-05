@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
   <head>
-    <title>Companies</title>
+    <title>Company Reviews</title>
     <meta charset="UTF-8" />
     <script src="https://code.jquery.com/jquery-3.4.1.js"></script>
 
@@ -113,7 +113,7 @@
   <body class="background">
     <div class="row mb-4">
       <div class="col-lg-12 mx-auto text-center title-container">
-        <h1 class="display-4 header">Companies</h1>
+        <h1 class="display-4 header">Company Reviews</h1>
       </div>
     </div>
 	<div style="min-width: 100%;">
@@ -134,14 +134,12 @@
           <div>
 			<table id="table">
 				<tr>
-					<th>Name</th>
-					<th>Description</th>
-					<th>Job positions</th>
-					<th>Address</th>
-					<th>City</th>
-					<th></th>
+					<th>Comment</th>
+					<th>Payment Review</th>
+					<th>Interview Review</th>
 				</tr>
 			</table>
+			<input type="hidden" id="company_id" value="{{ company_id }}">
           </div>
 		  <hr>
 		  <span id="links" style="margin: auto; display: flex;">
@@ -149,114 +147,20 @@
 			<span id="next" style="flex: 50%; text-align:right;"></span>
 		  </span>
   		  <hr>
-		  <div id="register_link" style="margin: auto;">
+		  <div style="margin: auto;">
 			  <input
-				type="button"
-				class="button btn-color btn-block shadow-sm"
-				style="margin: auto; max-width: 150px; height: 37px"
-				onclick="window.location.href='/view/api/companies/registration';"
-				value="Register Company"
-			  />
-    		  <hr>
-		  </div>
-		  <div id="offer_link" style="margin: auto;">
-			<input
-				type="button"
-				class="button btn-color btn-block shadow-sm"
-				style="margin: auto; max-width: 125px; height: 37px"
-				onclick="window.location.href='/view/api/companies/offer';"
-				value="Create Offer"
-			/>
-		  </div>
-		  <div id="owned_link" style="margin: auto;">
-			  <br>
-			  <input
-				type="button"
-				class="button btn-color btn-block shadow-sm"
-				style="margin: auto; max-width: 125px; height: 37px"
-				onclick="window.location.href='/view/api/companies/owned';"
-				value="Edit Company"
-			  />
-    		  <hr>
-		  </div>
-		  <div id="requests_link" style="margin: auto;">
-			<input
 				type="button"
 				class="button btn-color btn-block shadow-sm"
 				style="margin: auto; max-width: 115px; height: 37px"
-				onclick="window.location.href='/view/api/companies/requests';"
-				value="Requests"
-			/>
-		  </div>
-		  <div id="review_div" style="margin: 15%; margin-top: 0%; margin-bottom: 0%; display:none;">
-            <form>
-			  <div class="input-group form-group">
-                <div class="input-group-prepend">
-                  <span class="input-group-text"
-                    ><i class="fas fa-building icon"></i
-                  ></span>
-                </div>
-                <select
-                  id="company_names"
-                  class="form-control"
-                  required
-                />
-				</select>
-              </div>
-              <div class="input-group form-group">
-                <div class="input-group-prepend">
-                  <span class="input-group-text"
-                    ><i class="fas fa-book-open icon"></i
-                  ></span>
-                </div>
-                <textarea
-                  id="text_comment"
-                  class="form-control"
-                  placeholder="Comment"
-                  required
-                /></textarea>
-              </div>
-              <div class="input-group form-group">
-                <div class="input-group-prepend">
-                  <span class="input-group-text"
-                    ><i class="fas fa-money-bill-alt icon"></i
-                  ></span>
-                </div>
-                <textarea
-                  id="payment_review"
-                  class="form-control"
-                  placeholder="Payment reviews for job positions"
-				  required
-                /></textarea>
-              </div>
-              <div class="input-group form-group">
-                <div class="input-group-prepend">
-                  <span class="input-group-text"
-                    ><i class="fas fa-question-circle icon"></i
-                  ></span>
-                </div>
-                <textarea
-                  id="interview_review"
-                  class="form-control"
-                  placeholder="Review for the interview process"
-				  required
-                /></textarea>
-              </div>
-              <button
-                id="review"
-                class="btn btn-color btn-block shadow-sm"
-                style="margin: auto; max-width: 100px"
-              >
-                Review
-              </button>
-            </form>
+				onclick="window.location.href='/view/api/companies';"
+				value="Companies"
+			  />
 		  </div>
         </div>
       </div>
     </div>
     <script>
 	  let response = null;
-	  let auth = null;
 
 	  function handleSuccess(res) {
         response = res;
@@ -271,20 +175,12 @@
 		
         response.results.forEach(r => {
 			let nr = document.createElement("tr");
-			const keys = ["name", "description", "job_positions", "address", "city"];
+			const keys = ["text_comment", "payment_review", "interview_review"];
 			keys.forEach((key) => {
 				let cell = document.createElement("td");
 				cell.innerText = r[key];
 				nr.appendChild(cell);
 			})
-			let cell = document.createElement("td");
-			let review_link = document.createElement("input");
-			review_link.setAttribute("class", "button btn-color shadow-sm");
-			review_link.setAttribute("style", "max-width: 85px; height: 30px; text-align: center;");
-			review_link.setAttribute("onclick", "window.location.href='/view/api/companies/reviews/" + r.id + "';");
-			review_link.setAttribute("value", "Reviews");
-			cell.appendChild(review_link);
-			nr.appendChild(cell);
 			mytable.appendChild(nr);
 		});
 		
@@ -344,28 +240,13 @@
 			next.setAttribute("value", "Next");
 			next_links.appendChild(next);
 		}
-		
-		if (auth.role == "user") {
-			const company_names = document.getElementById("company_names");
-			
-			if (company_names.hasChildNodes()) {
-				while (company_names.children.length > 0) {
-					company_names.removeChild(company_names.lastChild);
-				}
-			}
-			
-			response.results.forEach((c) => {
-				let option = document.createElement("option");
-				option.innerText = c.name;
-				option.setAttribute("value", c.id);
-				company_names.appendChild(option);
-			});
-		}
 	  }
 
 	  function Init(){
+	  	const company_id = document.getElementById("company_id").value;
+
 		$.ajax({
-          url: "/api/companies",
+          url: "/api/companies/" + company_id + "/review",
 		  headers: {"Authorization": localStorage.getItem("Authorization")},
           type: "GET",
           success: function (res) {
@@ -378,56 +259,8 @@
 	  }
 	  
       $(document).ready(function () {
-  		$.ajax({
-          url: "/auth",
-		  headers: {"Authorization": localStorage.getItem("Authorization")},
-          type: "GET",
-          success: function (res) {
-			auth = res;
-			if (res.role != "admin") {
-				document.getElementById("requests_link").remove();
-			}
-			if (res.role != "user") {
-				document.getElementById("register_link").remove();
-			}
-			if (res.role != "owner") {
-				document.getElementById("offer_link").remove();
-				document.getElementById("owned_link").remove();
-			}
-			if (res.role == "user") {
-				$('#review_div').show();
-			}
-          },
-          error: function (res) {
-            alert(res.responseText);
-          },
-        });
-
   		Init();
-		
-		$("#review").click(function (e) {
-          e.preventDefault();
 
-          $.ajax({
-            url: "/api/companies/review",
-			headers: {"Authorization": localStorage.getItem("Authorization")},
-            type: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({
-              text_comment: $("#text_comment").val(),
-              payment_review: $("#payment_review").val(),
-              interview_review: $("#interview_review").val(),
-			  company_id: $("#company_names").val(),
-            }),
-            success: function (res) {
-              location.reload();
-            },
-            error: function (res) {
-              alert(res.responseText);
-            },
-          });
-        });
-		
 		$("#logout").click(function (e) {
 			e.preventDefault();
 			localStorage.removeItem("Authorization");
