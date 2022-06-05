@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.3.0 (2022-06-05)
+### Feature
+* Companies reviews requests ([#2](https://github.com/draganagrbic998/devops_agent_service/issues/2)) ([`d3febbc`](https://github.com/draganagrbic998/devops_agent_service/commit/d3febbc79b9d82ea5e59af59760d351820a140c1))
+
 ## v1.2.0 (2022-06-05)
 ### Feature
 * Login and registration features ([#1](https://github.com/draganagrbic998/devops_agent_service/issues/1)) ([`1a4763e`](https://github.com/draganagrbic998/devops_agent_service/commit/1a4763e43f0b0196ad81026a0f69da8e0eccedf1))
