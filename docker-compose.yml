@@ -2,7 +2,12 @@ services:
 
   agent_service:
     build: .
-    environment: 
+    environment:
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: agent_service_db
+      DB_PORT: 5432
+      DB_NAME: postgres
       DATABASE_URL: postgresql://postgres:postgres@agent_service_db:5432/postgres
     networks:
       - dislinkt

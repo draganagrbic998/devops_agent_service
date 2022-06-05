@@ -18,7 +18,7 @@ def generate_auth(id=0, role='user'):
 
 @pytest.fixture(scope="session", autouse=True)
 def before_tests(request):
-    time.sleep(10)
+    time.sleep(30)
 
 
 def reset_table(number_of_rows=0, role=None):
