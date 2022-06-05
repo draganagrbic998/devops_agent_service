@@ -2,6 +2,10 @@
 
 <!--next-version-placeholder-->
 
+## v1.4.0 (2022-06-05)
+### Feature
+* Owned company edit and create offer ([#3](https://github.com/draganagrbic998/devops_agent_service/issues/3)) ([`751fb2c`](https://github.com/draganagrbic998/devops_agent_service/commit/751fb2c6a297a1a592ad1e57e274cc91a0b6075a))
+
 ## v1.3.0 (2022-06-05)
 ### Feature
 * Companies reviews requests ([#2](https://github.com/draganagrbic998/devops_agent_service/issues/2)) ([`d3febbc`](https://github.com/draganagrbic998/devops_agent_service/commit/d3febbc79b9d82ea5e59af59760d351820a140c1))
