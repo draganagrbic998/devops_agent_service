@@ -1,5 +1,5 @@
 from fastapi.testclient import TestClient
-from agent_service.main import app, AUTH_URL, JWT_SECRET, JWT_ALGORITHM, get_password_hash
+from agent_service.main import app, AUTH_URL, COMPANY_URL, JWT_SECRET, JWT_ALGORITHM, get_password_hash, list_companies, list_reviews
 from mock import patch
 import mock
 import json
@@ -579,3 +579,728 @@ def test_auth_valid(param):
         assert body['role'] == 'asd'
         db_spy.assert_called_once()
         db_spy.assert_called_with("select * from users where username=%s", ('asd',))
+
+
+def test_company_registration_missing_name():
+    data = {
+        'description': 'asd',
+        'address': 'asd',
+        'city': 'asd'
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'name'
+    assert body['detail'][0]['msg'] == 'field required'
+    assert body['detail'][0]['type'] == 'value_error.missing'
+
+
+def test_company_registration_null_name():
+    data = {
+        'name': None,
+        'description': 'asd',
+        'address': 'asd',
+        'city': 'asd'
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'name'
+    assert body['detail'][0]['msg'] == 'none is not an allowed value'
+    assert body['detail'][0]['type'] == 'type_error.none.not_allowed'
+
+
+def test_company_registration_empty_name():
+    data = {
+        'name': '',
+        'description': 'asd',
+        'address': 'asd',
+        'city': 'asd'
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'name'
+    assert body['detail'][0]['msg'] == 'ensure this value has at least 1 characters'
+    assert body['detail'][0]['type'] == 'value_error.any_str.min_length'
+    assert body['detail'][0]['ctx']['limit_value'] == 1
+
+
+def test_company_registration_missing_description():
+    data = {
+        'name': 'asd',
+        'address': 'asd',
+        'city': 'asd'
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'description'
+    assert body['detail'][0]['msg'] == 'field required'
+    assert body['detail'][0]['type'] == 'value_error.missing'
+
+
+def test_company_registration_null_description():
+    data = {
+        'name': 'asd',
+        'description': None,
+        'address': 'asd',
+        'city': 'asd'
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'description'
+    assert body['detail'][0]['msg'] == 'none is not an allowed value'
+    assert body['detail'][0]['type'] == 'type_error.none.not_allowed'
+
+
+def test_company_registration_empty_description():
+    data = {
+        'name': 'asd',
+        'description': '',
+        'address': 'asd',
+        'city': 'asd'
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'description'
+    assert body['detail'][0]['msg'] == 'ensure this value has at least 1 characters'
+    assert body['detail'][0]['type'] == 'value_error.any_str.min_length'
+    assert body['detail'][0]['ctx']['limit_value'] == 1
+
+
+def test_company_registration_missing_address():
+    data = {
+        'name': 'asd',
+        'description': 'asd',
+        'city': 'asd'
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'address'
+    assert body['detail'][0]['msg'] == 'field required'
+    assert body['detail'][0]['type'] == 'value_error.missing'
+
+
+def test_company_registration_null_address():
+    data = {
+        'name': 'asd',
+        'description': 'asd',
+        'address': None,
+        'city': 'asd'
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'address'
+    assert body['detail'][0]['msg'] == 'none is not an allowed value'
+    assert body['detail'][0]['type'] == 'type_error.none.not_allowed'
+
+
+def test_company_registration_empty_address():
+    data = {
+        'name': 'asd',
+        'description': 'asd',
+        'address': '',
+        'city': 'asd'
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'address'
+    assert body['detail'][0]['msg'] == 'ensure this value has at least 1 characters'
+    assert body['detail'][0]['type'] == 'value_error.any_str.min_length'
+    assert body['detail'][0]['ctx']['limit_value'] == 1
+
+
+def test_company_registration_missing_city():
+    data = {
+        'name': 'asd',
+        'description': 'asd',
+        'address': 'asd'
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'city'
+    assert body['detail'][0]['msg'] == 'field required'
+    assert body['detail'][0]['type'] == 'value_error.missing'
+
+
+def test_company_registration_null_city():
+    data = {
+        'name': 'asd',
+        'description': 'asd',
+        'address': 'asd',
+        'city': None
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'city'
+    assert body['detail'][0]['msg'] == 'none is not an allowed value'
+    assert body['detail'][0]['type'] == 'type_error.none.not_allowed'
+
+
+def test_company_registration_empty_city():
+    data = {
+        'name': 'asd',
+        'description': 'asd',
+        'address': 'asd',
+        'city': ''
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'city'
+    assert body['detail'][0]['msg'] == 'ensure this value has at least 1 characters'
+    assert body['detail'][0]['type'] == 'value_error.any_str.min_length'
+    assert body['detail'][0]['ctx']['limit_value'] == 1
+
+
+@patch('agent_service.main.db', testDB)
+@patch('agent_service.main.auth_req', return_value={'role': 'user'})
+@patch('agent_service.main.authorization_check', return_value=None)
+@patch('test.unit_test.testDB.execute', return_value=[{'id': 1}])
+def test_company_registration_valid(param1, param2, param3):
+    with patch.object(testDB, "execute", wraps=testDB.execute) as db_spy:
+        data = {
+            'name': 'asd',
+            'description': 'asd',
+            'address': 'asd',
+            'city': 'asd'
+        }
+        res = client.post(f'{COMPANY_URL}/registration', json=data, headers=generate_auth())
+        assert res.status_code == 200
+        body = json.loads(res.text)
+        assert body is None
+        db_spy.assert_called()
+
+
+@patch('agent_service.main.db', testDB)
+@patch('agent_service.main.auth_req', return_value={'role': 'user'})
+@patch('agent_service.main.authorization_check', return_value=None)
+def test_company_registration_taken_name(param, param2):
+    with mock.patch("test.unit_test.testDB.execute") as db_mock:
+        with patch.object(testDB, "execute", wraps=testDB.execute) as db_spy:
+            db_mock.side_effect = Exception()
+            data = {
+                'name': 'asd',
+                'description': 'asd',
+                'address': 'asd',
+                'city': 'asd'
+            }
+            res = client.post(f'{COMPANY_URL}/registration', json=data, headers=generate_auth())
+            assert res.status_code == 400
+            body = json.loads(res.text)
+            assert body['detail'] == 'Name already exists'
+            db_spy.assert_called()
+
+
+def test_update_company_missing_name():
+    data = {
+        'description': 'asd',
+        'job_positions': 'asd',
+        'address': 'asd',
+        'city': 'asd',
+        'active': True
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'name'
+    assert body['detail'][0]['msg'] == 'field required'
+    assert body['detail'][0]['type'] == 'value_error.missing'
+
+
+def test_update_company_null_name():
+    data = {
+        'name': None,
+        'description': 'asd',
+        'job_positions': 'asd',
+        'address': 'asd',
+        'city': 'asd',
+        'active': True
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'name'
+    assert body['detail'][0]['msg'] == 'none is not an allowed value'
+    assert body['detail'][0]['type'] == 'type_error.none.not_allowed'
+
+
+def test_update_company_empty_name():
+    data = {
+        'name': '',
+        'description': 'asd',
+        'address': 'asd',
+        'city': 'asd',
+        'job_positions': 'asd',
+        'active': True
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'name'
+    assert body['detail'][0]['msg'] == 'ensure this value has at least 1 characters'
+    assert body['detail'][0]['type'] == 'value_error.any_str.min_length'
+    assert body['detail'][0]['ctx']['limit_value'] == 1
+
+
+def test_update_company_missing_description():
+    data = {
+        'name': 'asd',
+        'address': 'asd',
+        'city': 'asd',
+        'job_positions': 'asd',
+        'active': True
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'description'
+    assert body['detail'][0]['msg'] == 'field required'
+    assert body['detail'][0]['type'] == 'value_error.missing'
+
+
+def test_update_company_null_description():
+    data = {
+        'name': 'asd',
+        'description': None,
+        'address': 'asd',
+        'city': 'asd',
+        'job_positions': 'asd',
+        'active': True
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'description'
+    assert body['detail'][0]['msg'] == 'none is not an allowed value'
+    assert body['detail'][0]['type'] == 'type_error.none.not_allowed'
+
+
+def test_update_company_empty_description():
+    data = {
+        'name': 'asd',
+        'description': '',
+        'address': 'asd',
+        'city': 'asd',
+        'job_positions': 'asd',
+        'active': True
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'description'
+    assert body['detail'][0]['msg'] == 'ensure this value has at least 1 characters'
+    assert body['detail'][0]['type'] == 'value_error.any_str.min_length'
+    assert body['detail'][0]['ctx']['limit_value'] == 1
+
+
+def test_update_company_missing_address():
+    data = {
+        'name': 'asd',
+        'description': 'asd',
+        'city': 'asd',
+        'job_positions': 'asd',
+        'active': True
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'address'
+    assert body['detail'][0]['msg'] == 'field required'
+    assert body['detail'][0]['type'] == 'value_error.missing'
+
+
+def test_update_company_null_address():
+    data = {
+        'name': 'asd',
+        'description': 'asd',
+        'address': None,
+        'city': 'asd',
+        'job_positions': 'asd',
+        'active': True
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'address'
+    assert body['detail'][0]['msg'] == 'none is not an allowed value'
+    assert body['detail'][0]['type'] == 'type_error.none.not_allowed'
+
+
+def test_update_company_empty_address():
+    data = {
+        'name': 'asd',
+        'description': 'asd',
+        'address': '',
+        'city': 'asd',
+        'job_positions': 'asd',
+        'active': True
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'address'
+    assert body['detail'][0]['msg'] == 'ensure this value has at least 1 characters'
+    assert body['detail'][0]['type'] == 'value_error.any_str.min_length'
+    assert body['detail'][0]['ctx']['limit_value'] == 1
+
+
+def test_update_company_missing_city():
+    data = {
+        'name': 'asd',
+        'description': 'asd',
+        'address': 'asd',
+        'job_positions': 'asd',
+        'active': True
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'city'
+    assert body['detail'][0]['msg'] == 'field required'
+    assert body['detail'][0]['type'] == 'value_error.missing'
+
+
+def test_update_company_null_city():
+    data = {
+        'name': 'asd',
+        'description': 'asd',
+        'address': 'asd',
+        'city': None,
+        'job_positions': 'asd',
+        'active': True
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'city'
+    assert body['detail'][0]['msg'] == 'none is not an allowed value'
+    assert body['detail'][0]['type'] == 'type_error.none.not_allowed'
+
+
+def test_update_company_empty_city():
+    data = {
+        'name': 'asd',
+        'description': 'asd',
+        'address': 'asd',
+        'city': '',
+        'job_positions': 'asd',
+        'active': True
+    }
+    res = client.post(f'{COMPANY_URL}/registration', json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'city'
+    assert body['detail'][0]['msg'] == 'ensure this value has at least 1 characters'
+    assert body['detail'][0]['type'] == 'value_error.any_str.min_length'
+    assert body['detail'][0]['ctx']['limit_value'] == 1
+
+
+@patch('agent_service.main.db', testDB)
+@patch('agent_service.main.auth_req', return_value={'role': 'user'})
+@patch('agent_service.main.authorization_check', return_value=None)
+@patch('test.unit_test.testDB.execute', return_value=[{'id': 1}])
+def test_update_company_valid(param, param2, param3):
+    with patch.object(testDB, "execute", wraps=testDB.execute) as db_spy:
+        data = {
+            'name': 'asd',
+            'description': 'asd',
+            'address': 'asd',
+            'city': 'asd',
+            'job_positions': 'asd',
+            'active': True
+        }
+        res = client.put(f"{COMPANY_URL}/1", json=data)
+        assert res.status_code == 200
+        body = json.loads(res.text)
+        assert body is None
+        db_spy.assert_called()
+
+
+@patch("agent_service.main.db", testDB)
+def test_list_companies_active():
+    with patch.object(testDB, "execute", wraps=testDB.execute) as db_spy:        
+        res = list_companies(0, 10, True)
+        assert res.offset == 0
+        assert res.limit == 10
+        assert res.size == 0
+        assert res.links.prev == None
+        assert res.links.next == None
+        db_spy.assert_called()
+        db_spy.assert_called_with(''
+        ' '.join(f"""
+            select * from company where active is %s order by id offset %s limit %s                        
+        """.split()), (True, 0, 10))
+
+
+@patch("agent_service.main.db", testDB)
+def test_list_companies_inactive():
+    with patch.object(testDB, "execute", wraps=testDB.execute) as db_spy:        
+        res = list_companies(0, 10, False)
+        assert res.offset == 0
+        assert res.limit == 10
+        assert res.size == 0
+        assert res.links.prev == None
+        assert res.links.next == None
+        db_spy.assert_called()
+        db_spy.assert_called_with(''
+        ' '.join(f"""
+            select * from company where active is %s order by id offset %s limit %s                        
+        """.split()), (False, 0, 10))
+
+
+def test_create_review_missing_text_comment():
+    data = {
+        'payment_review': 'asd',
+        'interview_review': 'asd',
+        'company_id': 1
+    }
+    res = client.post(f"{COMPANY_URL}/review", json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'text_comment'
+    assert body['detail'][0]['msg'] == 'field required'
+    assert body['detail'][0]['type'] == 'value_error.missing'
+
+
+def test_create_review_null_text_comment():
+    data = {
+        'text_comment': None,
+        'payment_review': 'asd',
+        'interview_review': 'asd',
+        'company_id': 1
+    }
+    res = client.post(f"{COMPANY_URL}/review", json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'text_comment'
+    assert body['detail'][0]['msg'] == 'none is not an allowed value'
+    assert body['detail'][0]['type'] == 'type_error.none.not_allowed'
+
+
+def test_create_review_empty_text_comment():
+    data = {
+        'text_comment': '',
+        'payment_review': 'asd',
+        'interview_review': 'asd',
+        'company_id': 1
+    }
+    res = client.post(f"{COMPANY_URL}/review", json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'text_comment'
+    assert body['detail'][0]['msg'] == 'ensure this value has at least 1 characters'
+    assert body['detail'][0]['type'] == 'value_error.any_str.min_length'
+    assert body['detail'][0]['ctx']['limit_value'] == 1
+
+
+def test_create_review_missing_payment_review():
+    data = {
+        'text_comment': 'asd',
+        'interview_review': 'asd',
+        'company_id': 1
+    }
+    res = client.post(f"{COMPANY_URL}/review", json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'payment_review'
+    assert body['detail'][0]['msg'] == 'field required'
+    assert body['detail'][0]['type'] == 'value_error.missing'
+
+
+def test_create_review_null_payment_review():
+    data = {
+        'text_comment': 'asd',
+        'payment_review': None,
+        'interview_review': 'asd',
+        'company_id': 1
+    }
+    res = client.post(f"{COMPANY_URL}/review", json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'payment_review'
+    assert body['detail'][0]['msg'] == 'none is not an allowed value'
+    assert body['detail'][0]['type'] == 'type_error.none.not_allowed'
+
+
+def test_create_review_empty_payment_review():
+    data = {
+        'text_comment': 'asd',
+        'payment_review': '',
+        'interview_review': 'asd',
+        'company_id': 1
+    }
+    res = client.post(f"{COMPANY_URL}/review", json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'payment_review'
+    assert body['detail'][0]['msg'] == 'ensure this value has at least 1 characters'
+    assert body['detail'][0]['type'] == 'value_error.any_str.min_length'
+    assert body['detail'][0]['ctx']['limit_value'] == 1
+
+
+def test_create_review_missing_interview_review():
+    data = {
+        'text_comment': 'asd',
+        'payment_review': 'asd',
+        'company_id': 1
+    }
+    res = client.post(f"{COMPANY_URL}/review", json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'interview_review'
+    assert body['detail'][0]['msg'] == 'field required'
+    assert body['detail'][0]['type'] == 'value_error.missing'
+
+
+def test_create_review_null_interview_review():
+    data = {
+        'text_comment': 'asd',
+        'payment_review': 'asd',
+        'interview_review': None,
+        'company_id': 1
+    }
+    res = client.post(f"{COMPANY_URL}/review", json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'interview_review'
+    assert body['detail'][0]['msg'] == 'none is not an allowed value'
+    assert body['detail'][0]['type'] == 'type_error.none.not_allowed'
+
+
+def test_create_review_empty_interview_review():
+    data = {
+        'text_comment': 'asd',
+        'payment_review': 'asd',
+        'interview_review': '',
+        'company_id': 1
+    }
+    res = client.post(f"{COMPANY_URL}/review", json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'interview_review'
+    assert body['detail'][0]['msg'] == 'ensure this value has at least 1 characters'
+    assert body['detail'][0]['type'] == 'value_error.any_str.min_length'
+    assert body['detail'][0]['ctx']['limit_value'] == 1
+
+
+def test_create_review_missing_company_id():
+    data = {
+        'text_comment': 'asd',
+        'payment_review': 'asd',
+        'interview_review': 'asd'
+    }
+    res = client.post(f"{COMPANY_URL}/review", json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'company_id'
+    assert body['detail'][0]['msg'] == 'field required'
+    assert body['detail'][0]['type'] == 'value_error.missing'
+
+
+def test_create_review_null_company_id():
+    data = {
+        'text_comment': 'asd',
+        'payment_review': 'asd',
+        'interview_review': 'asd',
+        'company_id': None
+    }
+    res = client.post(f"{COMPANY_URL}/review", json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'company_id'
+    assert body['detail'][0]['msg'] == 'none is not an allowed value'
+    assert body['detail'][0]['type'] == 'type_error.none.not_allowed'
+
+
+def test_create_review_invalid_company_id():
+    data = {
+        'text_comment': 'asd',
+        'payment_review': 'asd',
+        'interview_review': 'asd',
+        'company_id': ''
+    }
+    res = client.post(f"{COMPANY_URL}/review", json=data)
+    assert res.status_code == 422
+    body = json.loads(res.text)
+    assert body['detail'][0]['loc'][0] == 'body'
+    assert body['detail'][0]['loc'][1] == 'company_id'
+    assert body['detail'][0]['msg'] == 'value is not a valid integer'
+    assert body['detail'][0]['type'] == 'type_error.integer'
+
+
+@patch('agent_service.main.db', testDB)
+@patch('agent_service.main.auth_req', return_value={'role': 'user'})
+@patch('agent_service.main.authorization_check', return_value=None)
+@patch('test.unit_test.testDB.execute', return_value=[{'id': 1}])
+def test_create_review_valid(param, param2, param3):
+    with patch.object(testDB, "execute", wraps=testDB.execute) as db_spy:
+        data = {
+            'text_comment': 'asd',
+            'payment_review': 'asd',
+            'interview_review': 'asd',
+            'company_id': 1
+        }
+        res = client.post(f"{COMPANY_URL}/review", json=data, headers=generate_auth())
+        assert res.status_code == 200
+        body = json.loads(res.text)
+        assert body is None
+        db_spy.assert_called()
+
+
+@patch("agent_service.main.db", testDB)
+def test_list_reviews():
+    with patch.object(testDB, "execute", wraps=testDB.execute) as db_spy:        
+        res = list_reviews(0, 10, 1)
+        assert res.offset == 0
+        assert res.limit == 10
+        assert res.size == 0
+        assert res.links.prev == None
+        assert res.links.next == None
+        db_spy.assert_called()
+        db_spy.assert_called_with(''
+        ' '.join(f"""select * from review where company_id = %s order by id offset %s limit %s""".split()), ("1", 0, 10))
+
